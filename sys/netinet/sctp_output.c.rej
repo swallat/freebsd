@@ -1,0 +1,11 @@
+--- netinet/sctp_output.c
++++ netinet/sctp_output.c
+@@ -2277,7 +2277,7 @@
+ 	 * address means it is the same scope or higher scope but we can
+ 	 * allow for NAT which means its ok to have a global dest and a
+ 	 * private src.
+-	 * 
++	 *
+ 	 * L = loopback, P = private, G = global
+ 	 * ----------------------------------------- src    |  dest | result
+ 	 * ----------------------------------------- L     |   L   |    yes

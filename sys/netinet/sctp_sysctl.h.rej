@@ -1,0 +1,10 @@
+--- netinet/sctp_sysctl.h
++++ netinet/sctp_sysctl.h
+@@ -490,7 +491,6 @@
+ #define SCTPCTL_TIME_WAIT_MAX	0xffffffff
+ #define SCTPCTL_TIME_WAIT_DEFAULT	SCTP_TIME_WAIT
+ 
+-
+ #if defined(SCTP_DEBUG)
+ /* debug: Configure debug output */
+ #define SCTPCTL_DEBUG_DESC	"Configure debug output"

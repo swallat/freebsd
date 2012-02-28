@@ -2369,10 +2369,6 @@ sctp_handle_cookie_echo(struct mbuf *m, int iphlen, int offset,
 	struct sockaddr_storage dest_store;
 	struct sockaddr *localep_sa = (struct sockaddr *)&dest_store;
 	struct ip *iph;
-#ifdef INET6
-	struct ip6_hdr *ip6 = NULL;
-
-#endif
 	int notification = 0;
 	struct sctp_nets *netl;
 	int had_a_existing_tcb = 0;
@@ -2400,7 +2396,7 @@ sctp_handle_cookie_echo(struct mbuf *m, int iphlen, int offset,
 	case IPVERSION:
 		{
 			/* its IPv4 */
-		    struct sockaddr_in *lsin;
+			struct sockaddr_in *lsin;
 
 			lsin = (struct sockaddr_in *)(localep_sa);
 			memset(lsin, 0, sizeof(*lsin));
@@ -2416,13 +2412,14 @@ sctp_handle_cookie_echo(struct mbuf *m, int iphlen, int offset,
 	case IPV6_VERSION >> 4:
 		{
 			/* its IPv6 */
+			struct ip6_hdr *ip6;
 			struct sockaddr_in6 *lsin6;
-			ip6 = mtod(m, struct ip6_hdr *);
 
 			lsin6 = (struct sockaddr_in6 *)(localep_sa);
 			memset(lsin6, 0, sizeof(*lsin6));
 			lsin6->sin6_family = AF_INET6;
 			lsin6->sin6_len = sizeof(struct sockaddr_in6);
+			ip6 = mtod(m, struct ip6_hdr *);
 			lsin6->sin6_port = sh->dest_port;
 			lsin6->sin6_addr = ip6->ip6_dst;
 			size_of_pkt = SCTP_GET_IPV6_LENGTH(ip6) + iphlen;
@@ -2497,74 +2494,19 @@ sctp_handle_cookie_echo(struct mbuf *m, int iphlen, int offset,
 	if (l_stcb) {
 		SCTP_TCB_LOCK(l_stcb);
 	}
-
-	/* compute short or standard hmac */
-	if (!SCTP_BASE_SYSCTL(sctp_short_hmac)){
-	  /* compute standard hmac */
-	  /* which cookie is it? */
-	  if ((cookie->time_entered.tv_sec < (long)ep->time_of_secret_change) &&
-		  (ep->current_secret_number != ep->last_secret_number)) {
+	/* which cookie is it? */
+	if ((cookie->time_entered.tv_sec < (long)ep->time_of_secret_change) &&
+	    (ep->current_secret_number != ep->last_secret_number)) {
 		/* it's the old cookie */
 		(void)sctp_hmac_m(SCTP_HMAC,
-		  (uint8_t *) ep->secret_key[(int)ep->last_secret_number],
-		  SCTP_SECRET_SIZE, m, cookie_offset, calc_sig, 0);
-	  } else {
-		/* it's the current cookie */
-		(void)sctp_hmac_m(SCTP_HMAC,
-		  (uint8_t *) ep->secret_key[(int)ep->current_secret_number],
-		  SCTP_SECRET_SIZE, m, cookie_offset, calc_sig, 0);
-	  }
+		    (uint8_t *) ep->secret_key[(int)ep->last_secret_number],
+		    SCTP_SECRET_SIZE, m, cookie_offset, calc_sig, 0);
 	} else {
-	  /* compute short hmac */
-	  if ((cookie->time_entered.tv_sec < (long)ep->time_of_secret_change) &&
-		  (ep->current_secret_number != ep->last_secret_number)) {
-		/* it's the old cookie */
-		switch (iph->ip_v) {
-		case IPVERSION: /* IPv4 */
-		  {
-		   (void)sctp_hmac(SCTP_HMAC,
-		   (uint8_t *) ep->secret_key[(int)ep->last_secret_number],
-		   SCTP_SECRET_SIZE, (uint8_t *) &(iph->ip_src), sizeof(struct in_addr), calc_sig);
-		   break;
-		  }
-#ifdef INET6
-		case IPV6_VERSION >> 4:
-		  {
-		   (void)sctp_hmac(SCTP_HMAC,
-		   (uint8_t *) ep->secret_key[(int)ep->last_secret_number],
-		   SCTP_SECRET_SIZE, (uint8_t *) &(ip6->ip6_src), sizeof(struct in6_addr), calc_sig);
-		   break;
-		  }
-#endif
-		default:
-		  return (NULL);
-		}
-	  } else {
 		/* it's the current cookie */
-		switch (iph->ip_v) {
-		case IPVERSION: /* IPv4 */
-		  {
-		   (void)sctp_hmac(SCTP_HMAC,
-		   (uint8_t *) ep->secret_key[(int)ep->current_secret_number],
-		   SCTP_SECRET_SIZE, (uint8_t *) &(iph->ip_src), sizeof(struct in_addr), calc_sig);
-		   break;
-		  }
-#ifdef INET6
-		case IPV6_VERSION >> 4:
-		  {
-		   (void)sctp_hmac(SCTP_HMAC,
-		   (uint8_t *) ep->secret_key[(int)ep->current_secret_number],
-		   SCTP_SECRET_SIZE, (uint8_t *) &(ip6->ip6_src), sizeof(struct in6_addr), calc_sig);
-		   break;
-		  }
-#endif
-		default:
-		  return (NULL);
-		}
-	  }
+		(void)sctp_hmac_m(SCTP_HMAC,
+		    (uint8_t *) ep->secret_key[(int)ep->current_secret_number],
+		    SCTP_SECRET_SIZE, m, cookie_offset, calc_sig, 0);
 	}
-
-
 	/* get the signature */
 	SCTP_INP_RUNLOCK(l_inp);
 	sig = (uint8_t *) sctp_m_getptr(m_sig, 0, SCTP_SIGNATURE_SIZE, (uint8_t *) & tmp_sig);

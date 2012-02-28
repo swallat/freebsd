@@ -122,7 +122,6 @@ struct sctp_sysctl {
 #if defined(__APPLE__) || defined(SCTP_SO_LOCK_TESTING)
 	uint32_t sctp_output_unlocked;
 #endif
-        uint32_t sctp_short_hmac;
 };
 
 /*
@@ -549,12 +548,6 @@ struct sctp_sysctl {
 #define SCTPCTL_OUTPUT_UNLOCKED_MAX	1
 #define SCTPCTL_OUTPUT_UNLOCKED_DEFAULT	SCTPCTL_OUTPUT_UNLOCKED_MIN
 #endif
-
-/* Enable sending of short HMAC's (SHORT HMAC) */
-#define SCTPCTL_SHORT_HMAC_DESC   "Enable sending of SHORT HMAC's"
-#define SCTPCTL_SHORT_HMAC_MIN    0
-#define SCTPCTL_SHORT_HMAC_MAX    1
-#define SCTPCTL_SHORT_HMAC_DEFAULT    SCTPCTL_SHORT_HMAC_MIN
 
 
 #if defined(_KERNEL) || defined(__Userspace__)
