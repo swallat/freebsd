@@ -124,6 +124,7 @@ sctp_init_sysctls()
 #if defined(__APPLE__) || defined(SCTP_SO_LOCK_TESTING)
 	SCTP_BASE_SYSCTL(sctp_output_unlocked) = SCTPCTL_OUTPUT_UNLOCKED_DEFAULT;
 #endif
+	SCTP_BASE_SYSCTL(sctp_short_hmac) = SCTPCTL_SHORT_HMAC_DEFAULT;
 }
 
 
@@ -636,6 +637,7 @@ sysctl_sctp_check(SYSCTL_HANDLER_ARGS)
 #if defined (__APPLE__) || defined(SCTP_SO_LOCK_TESTING)
 		RANGECHK(SCTP_BASE_SYSCTL(sctp_output_unlocked), SCTPCTL_OUTPUT_UNLOCKED_MIN, SCTPCTL_OUTPUT_UNLOCKED_MAX);
 #endif
+		RANGECHK(SCTP_BASE_SYSCTL(sctp_short_hmac), SCTPCTL_SHORT_HMAC_MIN, SCTPCTL_SHORT_HMAC_MAX);
 	}
 	return (error);
 }
@@ -1104,3 +1106,7 @@ SYSCTL_STRUCT(_net_inet_sctp, OID_AUTO, stats, CTLFLAG_RW,
 SYSCTL_PROC(_net_inet_sctp, OID_AUTO, assoclist, CTLFLAG_RD,
     0, 0, sctp_assoclist,
     "S,xassoc", "List of active SCTP associations");
+
+SYSCTL_PROC(_net_inet_sctp, OID_AUTO, short_hmac, CTLTYPE_INT | CTLFLAG_RW,
+    &SCTP_BASE_SYSCTL(sctp_short_hmac), 0, sysctl_sctp_check, "IU",
+    SCTPCTL_SHORT_HMAC_DESC);

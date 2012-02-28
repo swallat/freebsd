@@ -2286,7 +2286,7 @@ sctp_is_ifa_addr_acceptable(struct sctp_ifa *ifa,
 	 * address means it is the same scope or higher scope but we can
 	 * allow for NAT which means its ok to have a global dest and a
 	 * private src.
-	 * 
+	 *
 	 * L = loopback, P = private, G = global
 	 * ----------------------------------------- src    |  dest | result
 	 * ----------------------------------------- L     |   L   |    yes
@@ -4446,11 +4446,11 @@ sctp_arethere_unrecognized_parameters(struct mbuf *in_initpkt,
 	 * being equal to the beginning of the params i.e. (iphlen +
 	 * sizeof(struct sctp_init_msg) parse through the parameters to the
 	 * end of the mbuf verifying that all parameters are known.
-	 * 
+	 *
 	 * For unknown parameters build and return a mbuf with
 	 * UNRECOGNIZED_PARAMETER errors. If the flags indicate to stop
 	 * processing this chunk stop, and set *abort_processing to 1.
-	 * 
+	 *
 	 * By having param_offset be pre-set to where parameters begin it is
 	 * hoped that this routine may be reused in the future by new
 	 * features.
@@ -4972,7 +4972,7 @@ sctp_send_initiate_ack(struct sctp_inpcb *inp, struct sctp_tcb *stcb,
 	struct ip *iph;
 
 #ifdef INET6
-	struct ip6_hdr *ip6;
+	struct ip6_hdr *ip6 = NULL;
 
 #endif
 	struct sockaddr *to;
@@ -5581,10 +5581,34 @@ do_a_abort:
 	 * Time to sign the cookie, we don't sign over the cookie signature
 	 * though thus we set trailer.
 	 */
-	(void)sctp_hmac_m(SCTP_HMAC,
+	if (!SCTP_BASE_SYSCTL(sctp_short_hmac)){
+	  /* compute standard hmac*/
+	  (void)sctp_hmac_m(SCTP_HMAC,
 	    (uint8_t *) inp->sctp_ep.secret_key[(int)(inp->sctp_ep.current_secret_number)],
 	    SCTP_SECRET_SIZE, m_cookie, sizeof(struct sctp_paramhdr),
 	    (uint8_t *) signature, SCTP_SIGNATURE_SIZE);
+	} else {
+	  /* compute short hmac */
+	  switch (iph->ip_v) {
+	  case IPVERSION: /* IPv4 */
+		(void)sctp_hmac(SCTP_HMAC,
+		(uint8_t *) inp->sctp_ep.secret_key[(int)(inp->sctp_ep.current_secret_number)],
+		SCTP_SECRET_SIZE, (uint8_t *) &(iph->ip_src), sizeof(struct in_addr),
+		(uint8_t *) signature);
+		break;
+#ifdef INET6
+	  case IPV6_VERSION >> 4: /* IPv6*/
+		(void)sctp_hmac(SCTP_HMAC,
+		(uint8_t *) inp->sctp_ep.secret_key[(int)(inp->sctp_ep.current_secret_number)],
+		SCTP_SECRET_SIZE, (uint8_t *) &(ip6->ip6_src), sizeof(struct in6_addr),
+		(uint8_t *) signature);
+		break;
+#endif
+	  default:
+		goto do_a_abort;
+		break;
+	  };
+	}
 	/*
 	 * We sifa 0 here to NOT set IP_DF if its IPv4, we ignore the return
 	 * here since the timer will drive a retranmission.
@@ -7475,7 +7499,7 @@ sctp_med_chunk_output(struct sctp_inpcb *inp,
 			 * (when CMT is off) then it calls
 			 * sctp_fill_outqueue for the net. This gets data on
 			 * the send queue for that network.
-			 * 
+			 *
 			 * In sctp_fill_outqueue TSN's are assigned and data is
 			 * copied out of the stream buffers. Note mostly
 			 * copy by reference (we hope).
